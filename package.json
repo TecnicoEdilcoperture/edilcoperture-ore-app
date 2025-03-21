@@ -1,0 +1,20 @@
+{
+  "name": "edilcoperture-ore-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TecnicoEdilcoperture/edilcoperture-ore-app.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TecnicoEdilcoperture/edilcoperture-ore-app/issues"
+  },
+  "homepage": "https://github.com/TecnicoEdilcoperture/edilcoperture-ore-app#readme"
+}
