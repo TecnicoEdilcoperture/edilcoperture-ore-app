@@ -12,8 +12,9 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
   
-// URL base dell'API (backend remoto)
-const API_BASE_URL = 'https://edilcoperture-api.onrender.com/api';
+// Modalità locale senza server API
+const USE_LOCAL_MODE = true;
+const API_BASE_URL = ''; // Lascia vuoto in modalità locale
   
 // Configurazione per le richieste fetch
 const fetchConfig = {

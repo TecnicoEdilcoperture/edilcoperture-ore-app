@@ -73,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => console.error('Errore nel recupero dell\'utente:', error));
     }
+
+    if (typeof USE_LOCAL_MODE !== 'undefined' && USE_LOCAL_MODE) {
+        console.log('App in modalità locale, non verrà utilizzato il server');
+    }
 });
 
 // Carica operai dal server
@@ -206,11 +210,12 @@ function handleRegistraOre(e) {
     
     console.log('Dati da inviare:', dati);
     
-    if (!isOnline) {
-        // Salva localmente se offline
+    // In modalità locale o se offline, salva sempre localmente
+    if (USE_LOCAL_MODE || !isOnline) {
+        // Salva localmente
         salvaLocalmente(dati);
         
-        alert('Sei offline. Le ore sono state salvate localmente e verranno sincronizzate quando sarai online.');
+        alert('Ore registrate con successo (salvate localmente)');
         
         // Resetta form
         registraOreForm.reset();
@@ -222,7 +227,7 @@ function handleRegistraOre(e) {
         return;
     }
     
-    // Se online, invia direttamente al server
+    // Se online e non in modalità locale, invia al server
     fetch(`${API_BASE_URL}/registra-ore`, {
         method: 'POST',
         headers: fetchConfig.headers,
@@ -409,8 +414,8 @@ function checkOnlineStatus() {
     if (isOnline) {
         offlineBanner.classList.add('d-none');
         
-        // Se eravamo offline prima e ora siamo online, sincronizza
-        if (wasOffline) {
+        // Se eravamo offline prima e ora siamo online, e non siamo in modalità locale
+        if (wasOffline && !USE_LOCAL_MODE) {
             sincronizzaDati();
         }
     } else {
