@@ -105,30 +105,25 @@ function fetchOperai() {
         });
 }
 
-// Carica cantieri dal server
+// Carica cantieri (versione statica)
 function fetchCantieri() {
-    fetch(`${API_BASE_URL}/cantieri`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                cantieri = data.cantieri;
-                
-                // Popola il select
-                cantiereSelect.innerHTML = '<option value="">Seleziona cantiere...</option>';
-                cantieri.forEach(cantiere => {
-                    const option = document.createElement('option');
-                    option.value = cantiere.id;
-                    option.textContent = cantiere.nome;
-                    cantiereSelect.appendChild(option);
-                });
-            } else {
-                alert('Errore nel caricamento dei cantieri');
-            }
-        })
-        .catch(error => {
-            console.error('Errore nella richiesta:', error);
-            alert('Impossibile caricare i cantieri. Controlla la connessione.');
-        });
+    console.log("Caricamento cantieri in modalità locale");
+    
+    // Dati statici dei cantieri
+    cantieri = [
+        { id: 1, nome: "Cantiere Via Roma" },
+        { id: 2, nome: "Cantiere Palazzo Nuovo" },
+        { id: 3, nome: "CASERMA MERCANTI" }
+    ];
+    
+    // Popola select
+    cantiereSelect.innerHTML = '<option value="">Seleziona cantiere...</option>';
+    cantieri.forEach(cantiere => {
+        const option = document.createElement('option');
+        option.value = cantiere.id;
+        option.textContent = cantiere.nome;
+        cantiereSelect.appendChild(option);
+    });
 }
 
 // Gestisce il login
@@ -177,7 +172,6 @@ function doLogin(user) {
     caricaRiepilogo();
 }
 
-// Gestisce la registrazione delle ore
 function handleRegistraOre(e) {
     e.preventDefault();
     
@@ -186,83 +180,76 @@ function handleRegistraOre(e) {
         return;
     }
     
-    // Ottieni i valori dal form
-    const cantId = cantiereSelect.value;
+    // Debug: Stampa i valori per verificare
+    console.log('Dati form:', {
+        operaioId: currentUser.id,
+        cantiereId: cantiereSelect.value,
+        data: dataLavoro.value,
+        oreLavorate: oreLavorate.value,
+        oreStrada: oreStrada.value,
+        straordinario: straordinario.value
+    });
+
+    // Converti valori numerici
+    const cantId = parseInt(cantiereSelect.value);
     const ore = parseFloat(oreLavorate.value);
     const data = dataLavoro.value;
     
+    // Controlli più rigorosi
     if (!cantId || isNaN(ore) || !data) {
-        alert('Assicurati di specificare cantiere, ore e data');
+        alert('Compila tutti i campi obbligatori correttamente');
+        console.error('Dati mancanti o non validi');
         return;
     }
     
     const dati = {
         operaioId: currentUser.id,
-        operaioNome: currentUser.nome + ' ' + currentUser.cognome,
-        cantiereId: parseInt(cantId),
-        cantiereName: cantieri.find(c => c.id == cantId)?.nome || '',
+        cantiereId: cantId,
         data: data,
-        ore_lavorate: ore,
-        ore_strada: parseFloat(oreStrada.value) || 0,
+        oreLavorate: ore,
+        oreStrada: parseFloat(oreStrada.value) || 0,
         straordinario: parseFloat(straordinario.value) || 0,
-        note: note.value
+        note: note.value || ""
     };
     
+    // Debug: Mostra dati inviati
     console.log('Dati da inviare:', dati);
-    
-    // In modalità locale o se offline, salva sempre localmente
-    if (USE_LOCAL_MODE || !isOnline) {
-        // Salva localmente
-        salvaLocalmente(dati);
-        
-        alert('Ore registrate con successo (salvate localmente)');
-        
-        // Resetta form
-        registraOreForm.reset();
-        dataLavoro.valueAsDate = new Date();
-        
-        // Aggiorna riepilogo locale
-        caricaRiepilogoLocale();
-        
-        return;
+
+    // Gestisci errori di invio
+    try {
+        // Implementa logica di invio
+        fetch('/api/registra-ore', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dati)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Errore nella registrazione');
+            }
+            return response.json();
+        })
+        .then(result => {
+            if (result.success) {
+                alert('Ore registrate con successo!');
+                // Resetta form
+                registraOreForm.reset();
+                dataLavoro.valueAsDate = new Date();
+                caricaRiepilogo();
+            } else {
+                alert(result.message || 'Errore nella registrazione');
+            }
+        })
+        .catch(error => {
+            console.error('Errore:', error);
+            alert('Impossibile registrare le ore. Controlla la connessione.');
+        });
+    } catch (error) {
+        console.error('Errore imprevisto:', error);
+        alert('Si è verificato un errore inaspettato');
     }
-    
-    // Se online e non in modalità locale, invia al server
-    fetch(`${API_BASE_URL}/registra-ore`, {
-        method: 'POST',
-        headers: fetchConfig.headers,
-        body: JSON.stringify(dati)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            alert('Ore registrate con successo!');
-            
-            // Resetta form
-            registraOreForm.reset();
-            dataLavoro.valueAsDate = new Date();
-            
-            // Aggiorna riepilogo
-            caricaRiepilogo();
-        } else {
-            alert('Errore: ' + result.message);
-            console.error('Risposta server:', result);
-            
-            // In caso di errore, salva localmente
-            salvaLocalmente(dati);
-            alert('Errore nella registrazione online. I dati sono stati salvati localmente e verranno sincronizzati più tardi.');
-        }
-    })
-    .catch(error => {
-        console.error('Errore nella richiesta:', error);
-        
-        // In caso di errore di rete, salva localmente
-        salvaLocalmente(dati);
-        alert('Errore di connessione. I dati sono stati salvati localmente e verranno sincronizzati più tardi.');
-        
-        // Aggiorna riepilogo locale
-        caricaRiepilogoLocale();
-    });
 }
 
 // Carica riepilogo settimanale
